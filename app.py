@@ -1,12 +1,14 @@
+# app.py
 import streamlit as st
 import matplotlib.pyplot as plt
 import matplotlib.patches as patches
-import pandas as pd
+from matplotlib.colors import hsv_to_rgb
+import numpy as np
 
 # ページ設定
-st.set_page_config(page_title="Skill CT Timeline", layout="wide")
+st.set_page_config(page_title="スキルCTタイムライン", layout="wide")
 
-# スキルリスト（例）
+# サンプルスキルデータ（日本語OK）
 skills = [
     {"Name": "ワンワンボンバー", "CT": 3.45, "Effect Time": 2.0},
     {"Name": "ブリザード", "CT": 4.5, "Effect Time": None},
@@ -32,77 +34,99 @@ skills = [
     {"Name": "フェニックス召喚", "CT": 4.3, "Effect Time": 2.0},
     {"Name": "アルマゲドン", "CT": 4.75, "Effect Time": None}
 ]
-# UI
+
+# ユーザーインターフェース
 mode = st.radio("Mode:", ["ranking event", "normal stage"])
-total_time = st.selectbox("Total Time:", [30, 40])
+total_time = st.select_slider("Total Time (seconds):", options=[30, 40], value=30)
+
 names = [s["Name"] for s in skills]
 selected = st.multiselect("Select skills:", names, default=names[:2])
-
-if not selected:
-    st.info("Please select at least one skill.")
-    st.stop()
-
-# フィルタ処理
 skills = [s for s in skills if s["Name"] in selected]
 
-# イベント計算
-timeline = []
-for idx, s in enumerate(skills):
+if not skills:
+    st.info("Select at least one skill.")
+    st.stop()
+
+# フォント日本語対応（ローカル環境にある日本語フォント名に変更してください）
+# import matplotlib.font_manager as fm
+# font_prop = fm.FontProperties(fname="/path/to/IPAexMincho.ttf")
+# plt.rcParams['font.family'] = font_prop.get_name()
+
+# 補助関数
+def time_overlap(s1, e1, s2, e2):
+    return max(0, min(e1, e2) - max(s1, s2))
+
+def generate_distinct_colors(n):
+    hues = np.linspace(0, 1, n + 1)[:-1]
+    return [hsv_to_rgb((h, 0.6, 0.9)) for h in hues]
+
+# プロット生成
+fig, ax = plt.subplots(figsize=(14, 6))
+colors = generate_distinct_colors(len(skills))
+bar_height = 0.3
+effect_ranges = [[] for _ in skills]
+instant_times = {}
+
+# CTイベントを収集
+for i, skill in enumerate(skills):
+    ct = float(skill["CT"])
+    et = skill.get("Effect Time") or 0
+    color = colors[i]
     t = 0
     while t <= total_time:
-        start = t + s["CT"] if mode == "ranking event" else t
-        end = start + s["Effect Time"]
+        start = t + ct if mode == "ranking event" else t
+        end = start + et
         if start > total_time:
             break
-        timeline.append({
-            "name": s["Name"], "start": start, "end": end, "et": s["Effect Time"], "idx": idx
-        })
-        t += s["CT"]
+        if et > 0:
+            ax.add_patch(patches.Rectangle((start, i - bar_height/2), end - start, bar_height,
+                                           color=color, alpha=0.6))
+            effect_ranges[i].append((start, end))
+        else:
+            key = round(start, 2)
+            instant_times.setdefault(key, []).append(i)
+        t += ct
 
-# 重複チェック関数
-def is_overlapping(a, b):
-    return not (a["end"] <= b["start"] or b["end"] <= a["start"])
+# 効果時間の重複部分を赤で描画
+for i in range(len(skills)):
+    for j in range(i+1, len(skills)):
+        for si, ei in effect_ranges[i]:
+            for sj, ej in effect_ranges[j]:
+                if time_overlap(si, ei, sj, ej) > 0:
+                    ov_s = max(si, sj); ov_e = min(ei, ej)
+                    for y in [i, j]:
+                        ax.add_patch(patches.Rectangle((ov_s, y-bar_height/2),
+                                                       ov_e - ov_s, bar_height,
+                                                       color='red', alpha=0.8))
 
-for ev in timeline:
-    ev["overlap"] = any(
-        ev["Name"] != other["Name"] and
-        ev["Effect Time"] > 0 and other["Effect Time"] > 0 and
-        is_overlapping(ev, other)
-        for other in timeline
-    )
-
-# 描画
-fig, ax = plt.subplots(figsize=(14, 6))
-for ev in timeline:
-    y = ev["idx"]
-    if ev["Effect Time"] > 0:
-        # 効果時間あり：バー
-        color = 'red' if ev["overlap"] else 'skyblue'
-        rect = patches.Rectangle((ev["start"], y-0.3), ev["Effect Time"], 0.6,
-                                 facecolor=color, edgecolor='black', alpha=0.6)
-        ax.add_patch(rect)
-    else:
-        # 即時型：縦線、重複時点線
-        overlap_with_et = any(
-            other["Name"] != ev["Name"] and other["Effect Time"] > 0 and
-            ev["start"] >= other["start"] and ev["start"] <= other["end"]
-            for other in timeline
+# 即時スキルを縦線で描画（重複なら点線）
+for t, idxs in instant_times.items():
+    for i in idxs:
+        overlaps_effect = any(
+            j != i and any(s <= t <= e for s, e in effect_ranges[j])
+            for j in range(len(skills))
         )
-        style = ':' if overlap_with_et else '-'
-        ax.plot([ev["start"], ev["start"]], [y-0.3, y+0.3],
-                color='blue', linestyle=style, linewidth=2)
+        color = 'red' if len(idxs) > 1 else 'blue'
+        linestyle = ':' if overlaps_effect else '-'
+        ax.plot([t, t], [i-bar_height/2, i+bar_height/2],
+                color=color, linestyle=linestyle, linewidth=1.8, alpha=0.9)
 
 # 軸設定
+ax.set_xlim(0, total_time)
+ax.set_ylim(-1, len(skills))
 ax.set_yticks(range(len(skills)))
 ax.set_yticklabels([s["Name"] for s in skills])
-ax.set_xlim(0, total_time)
 ax.set_xlabel("時間（秒）")
-ax.set_title(f"スキルCTタイムライン ({mode})")
-ax.grid(axis='x', linestyle='--', alpha=0.5)
+ax.set_title(f"スキルCTタイムライン（{mode}）")
+ax.grid(axis='x', linestyle='--', alpha=0.6)
+plt.tight_layout()
 
+# 可視化
 st.pyplot(fig, use_container_width=True)
 
-# Legend mapping
-st.markdown("**Legend mapping:**")
-for i, s in enumerate(skills):
-    st.markdown(f"- **Skill {i+1}** = {s['name']}")
+# ログとしてスキル一覧を出力
+st.markdown("### 📝 Selected skills info")
+for s in skills:
+    et = s.get("Effect Time")
+    et_str = "即時" if not et else f"{et} 秒"
+    st.write(f"- {s['Name']}: CT = {s['CT']} s, 効果時間 = {et_str}")
