@@ -43,7 +43,7 @@ if not selected:
     st.stop()
 
 # フィルタ処理
-skills = [s for s in skills if s["name"] in selected]
+skills = [s for s in skills if s["Name"] in selected]
 
 # イベント計算
 timeline = []
