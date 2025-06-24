@@ -112,6 +112,9 @@ for t, idxs in instant_times.items():
         ax.plot([t, t], [i-bar_height/2, i+bar_height/2],
                 color=color, linestyle=linestyle, linewidth=1.8, alpha=0.9)
 
+yticks.reverse()
+yticklabels.reverse()
+
 # 軸設定
 ax.set_xlim(0, total_time)
 ax.set_ylim(-1, len(skills))
