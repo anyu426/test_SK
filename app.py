@@ -112,14 +112,19 @@ for t, idxs in instant_times.items():
         ax.plot([t, t], [i-bar_height/2, i+bar_height/2],
                 color=color, linestyle=linestyle, linewidth=1.8, alpha=0.9)
 
+# y 軸を降順に並べる
+yticks = list(range(len(skills)))
+yticklabels = [s["alias"] for s in skills]
+
+# 降順に並べる
 yticks.reverse()
 yticklabels.reverse()
 
 # 軸設定
 ax.set_xlim(0, total_time)
 ax.set_ylim(-1, len(skills))
-ax.set_yticks(range(len(skills)))
-ax.set_yticklabels([s["Alias"] for s in skills])
+ax.set_yticks(yticks)
+ax.set_yticklabels(yticklabels)
 ax.set_xlabel("Time (second)")
 ax.set_title(f"Skill CT Timeline ({mode})")
 ax.grid(axis='x', linestyle='--', alpha=0.6)
