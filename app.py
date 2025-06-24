@@ -34,8 +34,9 @@ skills = [
 ]
 # UI
 mode = st.radio("Mode:", ["ranking event", "normal stage"])
-total_time = st.select_slider("Total Time:", options=[30, 40], value=30)
-selected = st.multiselect("Select skills:", [s["name"] for s in skills], default=[s["name"] for s in skills])
+total_time = st.selectbox("Total Time:", [30, 40])
+names = [s["Name"] for s in skills]
+selected = st.multiselect("Select skills:", names, default=names[:2])
 
 if not selected:
     st.info("Please select at least one skill.")
