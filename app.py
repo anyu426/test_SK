@@ -60,14 +60,14 @@ for idx, row in skills_df[skills_df["Name"].isin(selected)].iterrows():
     t=0
     while t <= total_time:
         start = t + (row.CT if mode=="ranking event" else 0)
-        end = start + row.EffectTime
+        end = start + row["EffectTime"]
         if start > total_time: break
         rows.append({
             "alias": alias,
             "name": row.Name,
             "start": start,
             "end": end,
-            "instant": row.EffectTime == 0
+            "instant": row["EffectTime"] == 0
         })
         t += row.CT
 
