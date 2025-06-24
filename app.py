@@ -35,6 +35,12 @@ skills_db = [
 ]
 
 mode = st.radio("Mode:", ["ranking event", "normal stage"])
+st.markdown("""
+**モード選択について**
+
+- `ranking event`：0秒時点で各スキルのCTが進んでおり、すぐに発動できる状態です。
+- `normal stage`：0秒時点ですべてのスキルを使い切った直後からスタートします（CTがこれから始まる）。
+""")
 total_time = st.selectbox("Total Time (seconds):", [30, 40])
 
 names = [s["Name"] for s in skills_db]
