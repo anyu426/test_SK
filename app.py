@@ -116,9 +116,6 @@ for t, idxs in instant_times.items():
 yticks = list(range(len(skills)))
 yticklabels = [s["Alias"] for s in skills]
 
-# 降順に並べる
-yticks.reverse()
-yticklabels.reverse()
 
 # 軸設定
 ax.set_xlim(0, total_time)
