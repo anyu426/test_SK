@@ -1,15 +1,13 @@
 import streamlit as st
+import matplotlib.pyplot as plt
+import matplotlib.patches as patches
 import pandas as pd
-import numpy as np
-import altair as alt
 
 # ページ設定
-st.set_page_config(page_title='Skill CT Timeline', page_icon=':hourglass_flowing_sand:')
+st.set_page_config(page_title="Skill CT Timeline", layout="wide")
 
-# 📦 スキルデータ（例）
-@st.cache_data
-def load_skills():
-    return pd.DataFrame([
+# スキルリスト（例）
+skills = [
     {"Name": "ワンワンボンバー", "CT": 3.45, "Effect Time": 2.0},
     {"Name": "ブリザード", "CT": 4.5, "Effect Time": None},
     {"Name": "プロテクション", "CT": 3.9, "Effect Time": 1.5},
@@ -33,65 +31,77 @@ def load_skills():
     {"Name": "ドラゴンブレス", "CT": 3.85, "Effect Time": None},
     {"Name": "フェニックス召喚", "CT": 4.3, "Effect Time": 2.0},
     {"Name": "アルマゲドン", "CT": 4.75, "Effect Time": None}
-])
-skills_df = load_skills()
+]
+# UI
+mode = st.radio("Mode:", ["ranking event", "normal stage"])
+total_time = st.select_slider("Total Time:", options=[30, 40], value=30)
+selected = st.multiselect("Select skills:", [s["name"] for s in skills], default=[s["name"] for s in skills])
 
-st.title("🏹 Skill CT Timeline")
-
-# 🔧 ユーザー入力 UI
-mode = st.radio("Mode", ["ranking event", "normal stage"])
-total_time = st.select_slider("Total Time", options=[30,40], value=30)
-
-selected = st.multiselect(
-    "Select skills:",
-    skills_df["Name"],
-    default=skills_df["Name"].tolist()[:2]
-)
-
-# 🚫 選択がないとき
 if not selected:
-    st.warning("Please select at least one skill.")
+    st.info("Please select at least one skill.")
     st.stop()
 
-# データ生成
-rows = []
-for idx, row in skills_df[skills_df["Name"].isin(selected)].iterrows():
-    alias = f"Skill {len(rows)}"  # 別の方法でもOK
-    t=0
+# フィルタ処理
+skills = [s for s in skills if s["name"] in selected]
+
+# イベント計算
+timeline = []
+for idx, s in enumerate(skills):
+    t = 0
     while t <= total_time:
-        start = t + (row.CT if mode=="ranking event" else 0)
-        end = start + row["Effect Time"]
-        if start > total_time: break
-        rows.append({
-            "alias": alias,
-            "name": row.Name,
-            "start": start,
-            "end": end,
-            "instant": row["Effect Time"] == 0
+        start = t + s["ct"] if mode == "ranking event" else t
+        end = start + s["et"]
+        if start > total_time:
+            break
+        timeline.append({
+            "name": s["name"], "start": start, "end": end, "et": s["et"], "idx": idx
         })
-        t += row.CT
+        t += s["ct"]
 
-df = pd.DataFrame(rows)
-df["dup"] = df.apply(
-    lambda r: ((df.alias != r.alias) & (df.start < r.end) & (df.end > r.start)).any(), axis=1
-)
+# 重複チェック関数
+def is_overlapping(a, b):
+    return not (a["end"] <= b["start"] or b["end"] <= a["start"])
 
-# 📊 プロット
-bars = alt.Chart(df[~df.instant]).mark_bar().encode(
-    x="start:Q", x2="end:Q", y=alt.Y("alias:N", sort=alt.EncodingSortField("alias")),
-    color=alt.condition("dup", alt.value("red"), alt.value("steelblue"))
-)
-inst = alt.Chart(df[df.instant]).mark_rule(strokeWidth=2).encode(
-    x="start:Q", y="alias:N",
-    color=alt.condition("dup", alt.value("red"), alt.value("steelblue")),
-    strokeDash=alt.condition("dup", alt.value([4,2]), alt.value([1,0]))
-)
+for ev in timeline:
+    ev["overlap"] = any(
+        ev["name"] != other["name"] and
+        ev["et"] > 0 and other["et"] > 0 and
+        is_overlapping(ev, other)
+        for other in timeline
+    )
 
-chart = (bars + inst).properties(width=700, height=50 * len(df["alias"].unique()))
-st.altair_chart(chart)
+# 描画
+fig, ax = plt.subplots(figsize=(14, 6))
+for ev in timeline:
+    y = ev["idx"]
+    if ev["et"] > 0:
+        # 効果時間あり：バー
+        color = 'red' if ev["overlap"] else 'skyblue'
+        rect = patches.Rectangle((ev["start"], y-0.3), ev["et"], 0.6,
+                                 facecolor=color, edgecolor='black', alpha=0.6)
+        ax.add_patch(rect)
+    else:
+        # 即時型：縦線、重複時点線
+        overlap_with_et = any(
+            other["name"] != ev["name"] and other["et"] > 0 and
+            ev["start"] >= other["start"] and ev["start"] <= other["end"]
+            for other in timeline
+        )
+        style = ':' if overlap_with_et else '-'
+        ax.plot([ev["start"], ev["start"]], [y-0.3, y+0.3],
+                color='blue', linestyle=style, linewidth=2)
 
-# 📝 スキル対応表
-st.markdown("### Legend mapping")
-mapping = {f"Skill {i+1}": name for i, name in enumerate(selected)}
-for alias, name in mapping.items():
-    st.write(f"- **{alias}** = {name}")
+# 軸設定
+ax.set_yticks(range(len(skills)))
+ax.set_yticklabels([s["name"] for s in skills])
+ax.set_xlim(0, total_time)
+ax.set_xlabel("時間（秒）")
+ax.set_title(f"スキルCTタイムライン ({mode})")
+ax.grid(axis='x', linestyle='--', alpha=0.5)
+
+st.pyplot(fig, use_container_width=True)
+
+# Legend mapping
+st.markdown("**Legend mapping:**")
+for i, s in enumerate(skills):
+    st.markdown(f"- **Skill {i+1}** = {s['name']}")
