@@ -37,8 +37,8 @@ skills_db = [
 st.markdown("""
 **モード選択について**
 
-- `ranking event`：0秒時点で各スキルのCTが進んでおり、すぐに発動できる状態です。
-- `normal stage`：0秒時点ですべてのスキルを使い切った直後からスタートします（CTがこれから始まる）。
+- `ranking event`：0秒時点でCTが適用されている状態です。（初回使用はCT後）
+- `normal stage`：0秒時点ですべてのスキルが使用可能な状態です。
 """)
 mode = st.radio("Mode:", ["ranking event", "normal stage"])
 st.markdown("""
