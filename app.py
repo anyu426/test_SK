@@ -120,8 +120,6 @@ yticklabels = [s["Alias"] for s in skills]
 # 軸設定
 ax.set_xlim(0, total_time)
 ax.set_ylim(-1, len(skills))
-yticks.reverse()
-yticklabels.reverse()
 ax.set_yticks(yticks)
 ax.set_yticklabels(yticklabels)
 ax.set_xlabel("Time (second)")
@@ -134,7 +132,7 @@ st.pyplot(fig, use_container_width=True)
 
 # スキル情報
 st.markdown("### 📝 Selected skills info")
-for s in skills:
+for s in reversed(skills):
     et = s.get("Effect Time")
     et_str = "即時" if not et else f"{et} 秒"
     st.write(f"- **{s['Alias']}** = {s['Name']}｜CT = {s['CT']} 秒｜効果時間 = {et_str}")
