@@ -43,10 +43,15 @@ st.markdown("""
 mode = st.radio("Mode:", ["ranking event", "normal stage"])
 st.markdown("""
 **時間選択について**
-30秒または40秒をタブから選択してください
+<br>30秒または40秒をタブから選択してください
 """)
 total_time = st.selectbox("Total Time (seconds):", [30, 40])
 
+st.markdown("""
+**スキル選択について**
+<br>比較したいスキルを選択してください(複数選択可)
+<br>おすすめは3個程度です
+""")
 names = [s["Name"] for s in skills_db]
 selected_names = st.multiselect("Select skills:", names, default=names[:2])
 skills = [s for s in skills_db if s["Name"] in selected_names]
