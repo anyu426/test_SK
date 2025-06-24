@@ -51,7 +51,7 @@ total_time = st.selectbox("Total Time (seconds):", [30, 40])
 st.markdown("""
 **スキル選択について**
 
-比較したいスキルを選択してください(複数選択可)
+比較したいスキルを選択してください(複数選択可)．リストから消す場合は×を押してください．
 
 おすすめは3個程度です
 """)
@@ -134,6 +134,14 @@ ax.set_xlabel("Time (second)")
 ax.set_title(f"Skill CT Timeline ({mode})")
 ax.grid(axis='x', linestyle='--', alpha=0.6)
 plt.tight_layout()
+
+st.markdown("""
+**画像の見方について**
+
+効果時間があるスキルは効果時間があるスキルと時間が重複している場合，赤く強調表示されます．(火山爆発やデスサイズなど)
+
+即時型のスキルは重複している場合点線で表示され，それ以外の時は直線で表示されます．(ベヒモス召喚や月光斬りなど)
+""")
 
 # 表示
 st.pyplot(fig, use_container_width=True)
