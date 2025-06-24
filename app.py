@@ -35,7 +35,7 @@ skills_db = [
 ]
 
 mode = st.radio("Mode:", ["ranking event", "normal stage"])
-total_time = st.selectbox("Total Time (seconds):", options=[30, 40], value=30)
+total_time = st.selectbox("Total Time (seconds):", [30, 40])
 
 names = [s["Name"] for s in skills_db]
 selected_names = st.multiselect("Select skills:", names, default=names[:2])
