@@ -114,7 +114,7 @@ for t, idxs in instant_times.items():
 
 # y 軸を降順に並べる
 yticks = list(range(len(skills)))
-yticklabels = [s["alias"] for s in skills]
+yticklabels = [s["Alias"] for s in skills]
 
 # 降順に並べる
 yticks.reverse()
