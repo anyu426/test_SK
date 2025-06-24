@@ -50,14 +50,14 @@ timeline = []
 for idx, s in enumerate(skills):
     t = 0
     while t <= total_time:
-        start = t + s["ct"] if mode == "ranking event" else t
-        end = start + s["et"]
+        start = t + s["CT"] if mode == "ranking event" else t
+        end = start + s["Effect Time"]
         if start > total_time:
             break
         timeline.append({
-            "name": s["name"], "start": start, "end": end, "et": s["et"], "idx": idx
+            "name": s["Name"], "start": start, "end": end, "et": s["Effect Time"], "idx": idx
         })
-        t += s["ct"]
+        t += s["CT"]
 
 # 重複チェック関数
 def is_overlapping(a, b):
@@ -65,8 +65,8 @@ def is_overlapping(a, b):
 
 for ev in timeline:
     ev["overlap"] = any(
-        ev["name"] != other["name"] and
-        ev["et"] > 0 and other["et"] > 0 and
+        ev["Name"] != other["Name"] and
+        ev["Effect Time"] > 0 and other["Effect Time"] > 0 and
         is_overlapping(ev, other)
         for other in timeline
     )
@@ -75,16 +75,16 @@ for ev in timeline:
 fig, ax = plt.subplots(figsize=(14, 6))
 for ev in timeline:
     y = ev["idx"]
-    if ev["et"] > 0:
+    if ev["Effect Time"] > 0:
         # 効果時間あり：バー
         color = 'red' if ev["overlap"] else 'skyblue'
-        rect = patches.Rectangle((ev["start"], y-0.3), ev["et"], 0.6,
+        rect = patches.Rectangle((ev["start"], y-0.3), ev["Effect Time"], 0.6,
                                  facecolor=color, edgecolor='black', alpha=0.6)
         ax.add_patch(rect)
     else:
         # 即時型：縦線、重複時点線
         overlap_with_et = any(
-            other["name"] != ev["name"] and other["et"] > 0 and
+            other["Name"] != ev["Name"] and other["Effect Time"] > 0 and
             ev["start"] >= other["start"] and ev["start"] <= other["end"]
             for other in timeline
         )
@@ -94,7 +94,7 @@ for ev in timeline:
 
 # 軸設定
 ax.set_yticks(range(len(skills)))
-ax.set_yticklabels([s["name"] for s in skills])
+ax.set_yticklabels([s["Name"] for s in skills])
 ax.set_xlim(0, total_time)
 ax.set_xlabel("時間（秒）")
 ax.set_title(f"スキルCTタイムライン ({mode})")
